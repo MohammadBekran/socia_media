@@ -32,3 +32,38 @@ class Like(models.Model):
 
     def __str__(self):
         return f'{self.user} liked {self.post}'
+
+
+class Comment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments')
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name='comments')
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    body = models.TextField()
+    created = models.DateField(auto_now_add=True)
+    updated = models.DateField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return f'{self.user} commented on {self.post}'
+
+
+class CommentLike(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comment_likes')
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, related_name='comment_likes')
+    created = models.DateField(auto_now_add=True)
+    updated = models.DateField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'comment')
+
+    def __str__(self):
+        return f'{self.user} liked {self.comment}'

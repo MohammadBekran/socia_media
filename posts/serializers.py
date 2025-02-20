@@ -1,7 +1,6 @@
 from django.utils.text import slugify
-from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Post, Like
+from .models import Post, Like, Comment, CommentLike
 
 
 class PostCreateSerializer(serializers.ModelSerializer):
@@ -55,4 +54,24 @@ class LikeSerializer(serializers.ModelSerializer):
             'title': post.title,
             'slug': post.slug,
             'body': post.body
+        }
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ('id', 'user', 'post', 'parent', 'body', 'created', 'updated')
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'post': {'read_only': True}
+        }
+
+
+class CommentLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentLike
+        fields = ('id', 'user', 'comment')
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'comment': {'read_only': True}
         }

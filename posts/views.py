@@ -6,8 +6,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Post, Like
-from .serializers import PostCreateSerializer, LikeSerializer
+from .models import Post, Like, Comment, CommentLike
+from .serializers import PostCreateSerializer, LikeSerializer, CommentSerializer, CommentLikeSerializer
 
 
 class PostPagination(PageNumberPagination):
@@ -55,6 +55,12 @@ class LikeViewSet(ModelViewSet):
 
         return Response({'detail': 'Post has been liked successfully'})
 
+    def update(self, request, *args, **kwargs):
+        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def partial_update(self, request, *args, **kwargs):
+        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def destroy(self, request, *args, **kwargs):
         post = get_object_or_404(Post, pk=kwargs['post_pk'])
         like = Like.objects.filter(user=request.user, post=post)
@@ -64,3 +70,38 @@ class LikeViewSet(ModelViewSet):
             return Response({'detail': 'Your like has been deleted succesfully'})
 
         return Response({'detail': "You haven't like this post"})
+
+
+class CommentViewSet(ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, pk=self.kwargs['post_pk'])
+
+        serializer.save(user=self.request.user, post=post)
+
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if comment.user != request.user:
+            return Response({'detail': 'You can only delete your comments'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
+
+class CommentLikeViewSet(ModelViewSet):
+    queryset = CommentLike.objects.all()
+    serializer_class = CommentLikeSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        comment = get_object_or_404(Comment, pk=self.kwargs['comment_pk'])
+
+        serializer.save(user=self.request.user, comment=comment)
+        return super().perform_create(serializer)
+
+    def update(self, request, *args, **kwargs):
+        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def partial_update(self, request, *args, **kwargs):
+        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
