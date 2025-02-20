@@ -16,4 +16,18 @@ class Post(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.title} - {self.user}'
+        return self.title
+
+
+class Like(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='likes')
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name='likes')
+    created = models.DateField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f'{self.user} liked {self.post}'

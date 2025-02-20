@@ -1,19 +1,15 @@
 from django.utils.text import slugify
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Post
-
-
-class PostListserializsr(serializers.ModelSerializer):
-    class Meta:
-        model = Post
-        fields = ('id', 'user', 'title', 'slug', 'body', 'slug', 'picture')
+from .models import Post, Like
 
 
 class PostCreateSerializer(serializers.ModelSerializer):
+    total_likes = serializers.SerializerMethodField()
+
     class Meta:
         model = Post
-        fields = ('id', 'user', 'title', 'body', 'slug', 'picture')
+        fields = ('id', 'user', 'title', 'body',
+                  'slug', 'total_likes', 'picture')
         extra_kwargs = {
             'slug': {'required': False},
             'user': {'read_only': True}
@@ -27,3 +23,14 @@ class PostCreateSerializer(serializers.ModelSerializer):
         if not validated_data.get('slug'):
             validated_data['slug'] = slugify(validated_data['title'])
         return super().create(validated_data)
+
+    def get_total_likes(self, obj):
+        likes = Like.objects.filter(post=obj)
+
+        return likes.count()
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ('id', 'user', 'post')

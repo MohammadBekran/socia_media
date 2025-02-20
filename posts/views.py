@@ -1,11 +1,13 @@
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import SAFE_METHODS
-from .models import Post
-from .serializers import PostCreateSerializer
+from .models import Post, Like
+from .serializers import PostCreateSerializer, LikeSerializer
 
 
 class PostPagination(PageNumberPagination):
@@ -28,3 +30,27 @@ class PostViewSet(ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return Post.objects.all()
         return Post.objects.filter(user=self.request.user)
+
+
+class LikeViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        like, created = Like.objects.get_or_create(
+            user=request.user, post=post)
+
+        if not created:
+            return Response({'detail': 'You already liked this post'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'detail': 'Post has been liked successfully'})
+
+    def destroy(self, request, *args, **kwargs):
+        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        like = Like.objects.filter(user=request.user, post=post)
+
+        if like.exists():
+            like.delete()
+            return Response({'detail': 'Your like has been deleted succesfully'})
+
+        return Response({'detail': "You haven't like this post"})
