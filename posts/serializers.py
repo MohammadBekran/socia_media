@@ -1,4 +1,5 @@
 from django.utils.text import slugify
+from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import Post, Like
 
@@ -31,6 +32,27 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
 
 class LikeSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    post = serializers.SerializerMethodField()
+
     class Meta:
         model = Like
         fields = ('id', 'user', 'post')
+
+    def get_user(self, obj):
+        user = obj.user
+
+        return {
+            'id': user.id,
+            'username': user.username,
+        }
+
+    def get_post(self, obj):
+        post = obj.post
+
+        return {
+            'id': post.id,
+            'title': post.title,
+            'slug': post.slug,
+            'body': post.body
+        }

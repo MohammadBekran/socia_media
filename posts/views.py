@@ -35,6 +35,16 @@ class PostViewSet(ModelViewSet):
 class LikeViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
+    def list(self, request, *args, **kwargs):
+        likes = Like.objects.all()
+        ser_data = LikeSerializer(instance=likes, many=True)
+        return Response(ser_data.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, *args, **kwargs):
+        like = get_object_or_404(Like, pk=kwargs['pk'])
+        ser_data = LikeSerializer(instance=like)
+        return Response(ser_data.data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         post = get_object_or_404(Post, pk=kwargs['post_pk'])
         like, created = Like.objects.get_or_create(
