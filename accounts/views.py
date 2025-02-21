@@ -4,14 +4,22 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
 from .models import Profile, Follow
 from .serializers import UserProfileUpdateSerializer, FollowSerializer
 
 
+class UserProfilePagination(PageNumberPagination):
+    page_size = 10
+
+
 class UserProfileUpdateViewSet(ModelViewSet):
+    queryset = User.objects.all().select_related(
+        'profile').prefetch_related('posts', 'followers', 'followings')
     serializer_class = UserProfileUpdateSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = UserProfilePagination
 
     def get_queryset(self):
         if not self.request.user.is_staff and self.request.method == 'GET':

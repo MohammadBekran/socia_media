@@ -11,6 +11,9 @@ router.register('', views.PostViewSet, basename='posts')
 post_likes_router = NestedDefaultRouter(router, '', lookup='post')
 post_likes_router.register('likes', views.LikeViewSet, basename='post-likes')
 
+post_saves_router = NestedDefaultRouter(router, '', lookup='post')
+post_saves_router.register('saves', views.SaveViewSet, basename='post-saves')
+
 post_comments_router = NestedDefaultRouter(router, '', lookup='post')
 post_comments_router.register(
     'comments', views.CommentViewSet, basename='post-comments')
@@ -25,5 +28,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('', include(post_comments_router.urls)),
     path('', include(post_comment_likes_router.urls)),
+    path('', include(post_saves_router.urls)),
     path('', include(post_likes_router.urls))
 ]

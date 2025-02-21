@@ -67,3 +67,18 @@ class CommentLike(models.Model):
 
     def __str__(self):
         return f'{self.user} liked {self.comment}'
+
+
+class Save(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name='saved_posts')
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f'{self.user} saved {self.post}'

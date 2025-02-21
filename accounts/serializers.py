@@ -229,8 +229,3 @@ class FollowSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'follower': {'required': False}
         }
-
-    class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + \
-            ('posts', 'liked_posts', 'comments',
-             'comment_likes', 'followers', 'followings')

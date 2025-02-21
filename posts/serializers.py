@@ -1,33 +1,68 @@
-from django.utils.text import slugify
 from rest_framework import serializers
-from .models import Post, Like, Comment, CommentLike
+from .models import Post, Like, Comment, CommentLike, Save
 
 
-class PostCreateSerializer(serializers.ModelSerializer):
-    total_likes = serializers.SerializerMethodField()
+class PostSerializer(serializers.ModelSerializer):
+    likes = serializers.SerializerMethodField()
+    saves = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ('id', 'user', 'title', 'body',
-                  'slug', 'total_likes', 'picture')
+                  'slug', 'picture', 'likes', 'saves', 'comments')
         extra_kwargs = {
             'slug': {'required': False},
             'user': {'read_only': True}
         }
 
-    def create(self, validated_data):
-        request = self.context.get('request')
-
-        if request and request.user.is_authenticated:
-            validated_data['user'] = request.user
-        if not validated_data.get('slug'):
-            validated_data['slug'] = slugify(validated_data['title'])
-        return super().create(validated_data)
-
-    def get_total_likes(self, obj):
+    def get_likes(self, obj):
         likes = Like.objects.filter(post=obj)
 
-        return likes.count()
+        return [
+            {
+                'id': like.id,
+                'user': like.user.id,
+                'created': like.created
+            }
+            for like in likes
+        ]
+
+    def get_saves(self, obj):
+        saves = Save.objects.filter(post=obj)
+
+        return [
+            {
+                'id': save.id,
+                'user': save.user.id,
+                'created': save.created
+            }
+            for save in saves
+        ]
+
+    def get_comments(self, obj):
+        comments = Comment.objects.filter(post=obj)
+
+        return [
+            {
+                'id': comment.id,
+                'body': comment.body,
+                'user': comment.user.id,
+                'post': comment.post.id,
+                'parent': comment.parent.id if comment.parent else None,
+                'comment_likes': [
+                    {
+                        'id': comment_like.id,
+                        'user': comment_like.user.id,
+                        'created': comment_like.created,
+                    }
+                    for comment_like in comment.comment_likes.all()
+                ],
+                'created': comment.created
+
+            }
+            for comment in comments
+        ]
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -39,12 +74,13 @@ class LikeSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'post')
 
     def get_user(self, obj):
-        user = obj.user
-
-        return {
-            'id': user.id,
-            'username': user.username,
-        }
+        if obj.user:
+            return {
+                'id': obj.user.id,
+                'username': obj.user.username,
+            }
+        else:
+            return None
 
     def get_post(self, obj):
         post = obj.post
@@ -58,13 +94,28 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    comment_likes = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
-        fields = ('id', 'user', 'post', 'parent', 'body', 'created', 'updated')
+        fields = ('id', 'user', 'post', 'parent', 'body',
+                  'comment_likes', 'created', 'updated')
         extra_kwargs = {
             'user': {'read_only': True},
             'post': {'read_only': True}
         }
+
+    def get_comment_likes(self, obj):
+        comment_likes = CommentLike.objects.filter(comment=obj)
+
+        return [
+            {
+                'id': comment_like.id,
+                'user': comment_like.user.id,
+                'created': comment_like.created
+            }
+            for comment_like in comment_likes
+        ]
 
 
 class CommentLikeSerializer(serializers.ModelSerializer):
@@ -74,4 +125,14 @@ class CommentLikeSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'read_only': True},
             'comment': {'read_only': True}
+        }
+
+
+class SaveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Save
+        fields = ('id', 'user', 'post', 'created')
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'post': {'read_only': True}
         }
