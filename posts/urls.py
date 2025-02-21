@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 from . import views
 
+app_name = 'posts'
+
 router = DefaultRouter()
 router.register('', views.PostViewSet, basename='posts')
 
@@ -17,6 +19,7 @@ post_comment_likes_router = NestedDefaultRouter(
     post_comments_router, 'comments', lookup='comment')
 post_comment_likes_router.register(
     'likes', views.CommentLikeViewSet, basename='comment-likes')
+
 
 urlpatterns = [
     path('', include(router.urls)),
