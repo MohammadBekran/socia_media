@@ -7,6 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from social_media.utils import skip_for_swagger
 from .models import Post, Like, Comment, CommentLike, Save
 from .serializers import PostSerializer, LikeSerializer, CommentSerializer, CommentLikeSerializer, SaveSerializer
 
@@ -23,13 +24,17 @@ class PostViewSet(ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = PostPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filerset_fields = ['user', 'created']
+    filterset_fields = ['user', 'created']
     search_fields = ['title', 'slug', 'body']
     ordering_fields = '__all__'
 
     def get_queryset(self):
         if self.request.method in SAFE_METHODS:
             return Post.objects.all()
+
+        if not self.request.user.is_authenticated:
+            return Post.objects.none()
+
         return Post.objects.filter(user=self.request.user)
 
     def create(self, validated_data):
@@ -53,12 +58,12 @@ class LikeViewSet(ModelViewSet):
         return Response(ser_data.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
-        like = get_object_or_404(Like, pk=kwargs['pk'])
+        like = get_object_or_404(Like, pk=kwargs.get('pk'))
         ser_data = LikeSerializer(instance=like)
         return Response(ser_data.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=kwargs.get('post_pk'))
         like, created = Like.objects.get_or_create(
             user=request.user, post=post)
 
@@ -74,7 +79,7 @@ class LikeViewSet(ModelViewSet):
         return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=kwargs.get('post_pk'))
         like = Like.objects.filter(user=request.user, post=post)
 
         if like.exists():
@@ -89,13 +94,14 @@ class SaveViewSet(ModelViewSet):
     serializer_class = SaveSerializer
     permission_classes = [IsAuthenticated]
 
+    @skip_for_swagger
     def get_queryset(self):
-        post = get_object_or_404(Post, pk=self.kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_pk'))
 
         return Save.objects.filter(post=post)
 
     def create(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=kwargs.get('post_pk'))
         save, created = Save.objects.get_or_create(
             user=self.request.user, post=post)
 
@@ -105,7 +111,7 @@ class SaveViewSet(ModelViewSet):
         return Response({'detail': 'This post has been saved successfully'}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=kwargs.get('post_pk'))
         save = get_object_or_404(Save, user=self.request.user, post=post)
 
         save.delete()
@@ -125,7 +131,7 @@ class CommentViewSet(ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        post = get_object_or_404(Post, pk=self.kwargs['post_pk'])
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_pk'))
 
         serializer.save(user=self.request.user, post=post)
 
@@ -140,14 +146,15 @@ class CommentLikeViewSet(ModelViewSet):
     serializer_class = CommentLikeSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    @skip_for_swagger
     def get_queryset(self):
-        post = get_object_or_404(Post, pk=self.kwargs['post_pk'])
-        comment = get_object_or_404(Comment, pk=self.kwargs['comment_pk'])
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_pk'))
+        comment = get_object_or_404(Comment, pk=self.kwargs.get('comment_pk'))
 
         return CommentLike.objects.filter(comment=comment)
 
     def perform_create(self, serializer):
-        comment = get_object_or_404(Comment, pk=self.kwargs['comment_pk'])
+        comment = get_object_or_404(Comment, pk=self.kwargs.get('comment_pk'))
 
         serializer.save(user=self.request.user, comment=comment)
         return super().perform_create(serializer)

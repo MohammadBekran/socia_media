@@ -6,6 +6,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
+from social_media.utils import skip_for_swagger
 from .models import Profile, Follow
 from .serializers import UserProfileUpdateSerializer, FollowSerializer
 
@@ -18,9 +19,10 @@ class UserProfileUpdateViewSet(ModelViewSet):
     queryset = User.objects.all().select_related(
         'profile').prefetch_related('posts', 'followers', 'followings')
     serializer_class = UserProfileUpdateSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
     pagination_class = UserProfilePagination
 
+    @skip_for_swagger
     def get_queryset(self):
         if not self.request.user.is_staff and self.request.method == 'GET':
             raise PermissionDenied(
@@ -33,6 +35,7 @@ class FollowViewSet(ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
 
+    @skip_for_swagger
     def get_queryset(self):
         if self.request.method in SAFE_METHODS and not self.request.user.is_staff:
             return Follow.objects.filter(followrs=self.request.user)
