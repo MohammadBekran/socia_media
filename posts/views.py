@@ -37,14 +37,13 @@ class PostViewSet(ModelViewSet):
 
         return Post.objects.filter(user=self.request.user)
 
-    def create(self, validated_data):
-        request = self.context.get('request')
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user,
+            slug=slugify(serializer.validated_data.get('title', ''))
+        )
 
-        if request and request.user.is_authenticated:
-            validated_data['user'] = request.user
-        if not validated_data.get('slug'):
-            validated_data['slug'] = slugify(validated_data['title'])
-        return super().create(validated_data)
+        return super().perform_create(serializer)
 
 
 class LikeViewSet(ModelViewSet):

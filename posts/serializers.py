@@ -13,7 +13,8 @@ class PostSerializer(serializers.ModelSerializer):
                   'slug', 'picture', 'likes', 'saves', 'comments')
         extra_kwargs = {
             'slug': {'required': False},
-            'user': {'read_only': True}
+            'user': {'read_only': True},
+            'slug': {'read_only': True}
         }
 
     def get_likes(self, obj):
