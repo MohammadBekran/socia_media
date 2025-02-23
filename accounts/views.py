@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User
-from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import status, mixins
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
@@ -30,7 +30,11 @@ class UserProfileUpdateViewSet(ModelViewSet):
         return Profile.objects.all()
 
 
-class FollowViewSet(ModelViewSet):
+class FollowViewSet(mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.DestroyModelMixin,
+                    mixins.ListModelMixin,
+                    GenericViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
@@ -57,9 +61,3 @@ class FollowViewSet(ModelViewSet):
             return Response({'detail': 'Your already is following this user'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': f'You are following this user now'}, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating follow is not allowed'})
-
-    def partial_update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating follow is not allowed'})

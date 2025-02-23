@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
-from rest_framework import status
+from rest_framework import status, mixins
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -46,7 +46,11 @@ class PostViewSet(ModelViewSet):
         return super().perform_create(serializer)
 
 
-class LikeViewSet(ModelViewSet):
+class LikeViewSet(mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.DestroyModelMixin,
+                  mixins.ListModelMixin,
+                  GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
@@ -70,12 +74,6 @@ class LikeViewSet(ModelViewSet):
             return Response({'detail': 'You already liked this post'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': 'Post has been liked successfully'})
-
-    def update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def partial_update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
         post = get_object_or_404(Post, pk=kwargs.get('post_pk'))
@@ -117,12 +115,6 @@ class SaveViewSet(ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def partial_update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.all()
@@ -141,7 +133,11 @@ class CommentViewSet(ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-class CommentLikeViewSet(ModelViewSet):
+class CommentLikeViewSet(mixins.CreateModelMixin,
+                         mixins.RetrieveModelMixin,
+                         mixins.DestroyModelMixin,
+                         mixins.ListModelMixin,
+                         GenericViewSet):
     serializer_class = CommentLikeSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -163,9 +159,3 @@ class CommentLikeViewSet(ModelViewSet):
         if comment_like.user != request.user:
             return Response({'detail': 'You can only delete your comment likes'}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
-
-    def update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def partial_update(self, request, *args, **kwargs):
-        return Response({'detail': 'Updating likes is not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
